@@ -34,9 +34,14 @@ def send_sms(message):
 
 def main():
     for ticker, levels in stocks.items():
-        stock = yf.download(ticker, period='1mo', interval='1d')
+        stock = yf.download(ticker, period='1mo', interval='1d', auto_adjust=True)
         rsi_series = get_rsi(stock)
-        current_rsi = round(rsi_series.iloc[-1], 2)
+
+        if rsi_series.dropna().empty:
+            print(f"{ticker}: RSI could not be calculated (insufficient data)")
+            continue
+
+        current_rsi = round(rsi_series.dropna().iloc[-1], 2)
         current_price = round(stock['Close'].iloc[-1], 2)
 
         if current_rsi < levels['rsi_buy']:
