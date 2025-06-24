@@ -52,7 +52,7 @@ def main():
             print(f"{ticker}: Not enough data to calculate RSI.")
             continue
 
-        current_rsi = round(rsi_series.iloc[-1], 2)
+        current_rsi = round(float(rsi_series.iloc[-1]), 2)
         current_price = round(stock['Close'].iloc[-1], 2)
 
         print(f"{ticker} | Price: ${current_price} | RSI: {current_rsi}")
