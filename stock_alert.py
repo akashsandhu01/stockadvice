@@ -2,6 +2,7 @@ import yfinance as yf
 from twilio.rest import Client
 from dotenv import load_dotenv
 import os
+import pandas as pd
 
 load_dotenv()
 
@@ -20,10 +21,11 @@ stocks = {
 
 def get_rsi(data, period=14):
     delta = data['Close'].diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+    gain = delta.where(delta > 0, 0).rolling(window=period).mean()
+    loss = -delta.where(delta < 0, 0).rolling(window=period).mean()
     rs = gain / loss
-    return 100 - (100 / (1 + rs))
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
 
 def send_sms(message):
     client.messages.create(
@@ -35,14 +37,25 @@ def send_sms(message):
 def main():
     for ticker, levels in stocks.items():
         stock = yf.download(ticker, period='1mo', interval='1d', auto_adjust=True)
-        rsi_series = get_rsi(stock)
-
-        if rsi_series.dropna().empty:
-            print(f"{ticker}: RSI could not be calculated (insufficient data)")
+        
+        # If no data, skip
+        if stock.empty or 'Close' not in stock.columns:
+            print(f"{ticker}: No stock data available.")
             continue
 
-        current_rsi = round(rsi_series.dropna().iloc[-1], 2)
+        rsi_series = get_rsi(stock)
+
+        # Drop NaNs
+        rsi_series = rsi_series.dropna()
+
+        if rsi_series.empty:
+            print(f"{ticker}: Not enough data to calculate RSI.")
+            continue
+
+        current_rsi = round(rsi_series.iloc[-1], 2)
         current_price = round(stock['Close'].iloc[-1], 2)
+
+        print(f"{ticker} | Price: ${current_price} | RSI: {current_rsi}")
 
         if current_rsi < levels['rsi_buy']:
             send_sms(f"{ticker} RSI is {current_rsi}. Consider BUYING. Price: ${current_price}")
