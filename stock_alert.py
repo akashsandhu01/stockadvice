@@ -36,7 +36,7 @@ def send_sms(message):
 
 def main():
     for ticker, levels in stocks.items():
-        stock = yf.download(ticker, period='1mo', interval='1d', auto_adjust=True)
+        stock = yf.download(tickers=ticker, period='1mo', interval='1d', auto_adjust=True)
         
         # If no data, skip
         if stock.empty or 'Close' not in stock.columns:
